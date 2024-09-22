@@ -17,17 +17,25 @@ public class BootcampRepositoryImpl implements BootcampRepository {
 
     @Override
     public Mono<Bootcamp> save(Bootcamp bootcamp) {
-        return springDataBootcampRepository.save(bootcamp);
+        // Convertir de Bootcamp a BootcampEntity antes de guardar
+        BootcampEntity entity = new BootcampEntity(bootcamp.getId(), bootcamp.getName(), bootcamp.getDescription());
+        return springDataBootcampRepository.save(entity)
+                // Convertir de BootcampEntity a Bootcamp después de guardar
+                .map(savedEntity -> new Bootcamp(savedEntity.getId(), savedEntity.getName(), savedEntity.getDescription()));
     }
 
     @Override
     public Flux<Bootcamp> findAll() {
-        return springDataBootcampRepository.findAll();
+        // Convertir de BootcampEntity a Bootcamp al recuperar los datos
+        return springDataBootcampRepository.findAll()
+                .map(entity -> new Bootcamp(entity.getId(), entity.getName(), entity.getDescription()));
     }
 
     @Override
     public Mono<Bootcamp> findById(Long id) {
-        return springDataBootcampRepository.findById(id);
+        // Convertir de BootcampEntity a Bootcamp al buscar por ID
+        return springDataBootcampRepository.findById(id)
+                .map(entity -> new Bootcamp(entity.getId(), entity.getName(), entity.getDescription()));
     }
 
     @Override
