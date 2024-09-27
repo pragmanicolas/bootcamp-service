@@ -1,13 +1,13 @@
 package com.bootcamp.service.config;
 
 
+import com.bootcamp.service.adapters.in.security.CustomUserDetailsService;
 import com.bootcamp.service.adapters.in.security.JwtRequestFilter;
+import io.netty.handler.codec.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
@@ -20,19 +20,14 @@ import reactor.core.publisher.Mono;
 @Configuration
 public class SecurityConfig {
 
-    private final JwtRequestFilter jwtRequestFilter;
-
-    public SecurityConfig(JwtRequestFilter jwtRequestFilter) {
-        this.jwtRequestFilter = jwtRequestFilter;
-    }
-
     @Bean
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) throws Exception {
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http, JwtRequestFilter jwtRequestFilter) throws Exception {
         http.csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers("/api/auth/login").permitAll()
                         .pathMatchers("/api/auth/**").permitAll()
-                        .pathMatchers("/api/bootcamps/**").permitAll()
+                        // Permitir solo al rol "ADMIN" acceder a POST en /api/bootcamps
+                        .pathMatchers(String.valueOf(HttpMethod.POST), "/api/bootcamps").hasRole("ADMIN")
                         .pathMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyExchange().authenticated())
                 .addFilterAt(jwtRequestFilter, SecurityWebFiltersOrder.AUTHENTICATION);
@@ -45,12 +40,11 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    public ReactiveUserDetailsService reactiveUserDetailsService(UserDetailsService userDetailsService) {
-        return username -> Mono.fromCallable(() -> userDetailsService.loadUserByUsername(username));
-    }
 
+    // Inyectamos directamente el ReactiveUserDetailsService
     @Bean
     public ReactiveAuthenticationManager reactiveAuthenticationManager(ReactiveUserDetailsService reactiveUserDetailsService) {
         return new UserDetailsRepositoryReactiveAuthenticationManager(reactiveUserDetailsService);
     }
+
 }

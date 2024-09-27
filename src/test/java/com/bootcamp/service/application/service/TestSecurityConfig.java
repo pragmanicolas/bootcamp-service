@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
-import org.springframework.test.context.ActiveProfiles;
 import reactor.core.publisher.Mono;
 
 @Configuration

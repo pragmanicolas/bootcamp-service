@@ -10,22 +10,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
-
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -57,20 +52,22 @@ class BootcampControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        UserDetails userDetails = new User("user", "password", Collections.emptyList());
+        // Agregar un rol al usuario
+        UserDetails userDetails = new User("user", "password", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
 
-        // Mockeamos la autenticación del usuario
+        // Mockear la autenticación del usuario
         when(reactiveUserDetailsService.findByUsername(anyString()))
                 .thenReturn(Mono.just(userDetails));
 
         when(userDetailsService.loadUserByUsername(anyString()))
                 .thenReturn(userDetails);
 
-        // Generamos un token JWT válido usando UserDetails
+        // Generar un token JWT válido con roles usando UserDetails
         jwtToken = "Bearer " + jwtService.generateToken(userDetails).block();
 
-        System.out.println("Generated JWT Token: " + jwtToken);  // Imprimir el token para depurar
+        System.out.println("Generated JWT Token: " + jwtToken);  // Imprimir el token para depuración
     }
+
 
 
 

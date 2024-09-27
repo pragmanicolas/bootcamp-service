@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -82,15 +83,33 @@ class JwtServiceTest {
 
     // Test para verificar que un token expirado es identificado correctamente
     @Test
-    void testTokenExpiration() throws InterruptedException {
-        // En lugar de usar createToken, usa generateToken, que probablemente sea público
-        Mono<String> tokenMono = jwtService.generateToken(userDetails);
+    void testTokenExpiration() {
+        // Clona el servicio JWT para la prueba de expiración rápida
+        JwtService jwtServiceWithShortExpiration = new JwtService();
+
+        // Usa ReflectionTestUtils para inyectar la clave secreta y el tiempo de expiración corto
+        ReflectionTestUtils.setField(jwtServiceWithShortExpiration, "secretKey", "mysecretkeymysecretkeymysecretkeymysecretkey");
+        ReflectionTestUtils.setField(jwtServiceWithShortExpiration, "expirationTimeMs", 1L);  // Expiración rápida de 1ms
+
+        // Genera el token con la expiración rápida
+        Mono<String> tokenMono = jwtServiceWithShortExpiration.generateToken(userDetails);
         String token = tokenMono.block();  // Bloquear para obtener el valor
-        Thread.sleep(2000);  // Esperar a que el token expire (2 segundos)
-        Mono<Boolean> isValidMono = jwtService.validateToken(token);
+
+        // Esperar un tiempo mínimo para garantizar que el token expire
+        try {
+            Thread.sleep(1000);  // Solo 10 ms ya es suficiente para que el token expire
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();  // Restaura el estado interrumpido
+        }
+
+        // Valida que el token ha expirado
+        Mono<Boolean> isValidMono = jwtServiceWithShortExpiration.validateToken(token);
         boolean isValid = isValidMono.block();  // Bloquear para obtener el valor
+
+        // Esperar que el token ya no sea válido
         assertFalse(isValid);
     }
+
 
     // Test para validar que un token inválido es identificado correctamente
     @Test
